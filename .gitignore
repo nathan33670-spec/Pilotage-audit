@@ -1,0 +1,8 @@
+.env
+uploads/*
+!uploads/.gitkeep
+**/__pycache__/
+*.pyc
+.DS_Store
+node_modules/
+dist/
