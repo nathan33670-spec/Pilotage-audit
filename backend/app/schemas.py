@@ -1,15 +1,27 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from app.models import AuditPriority, AuditStatus, AuthProvider, DocumentType, PhaseStatus, UserRole
 
 
+def _validate_email_format(value: str) -> str:
+    # Validation minimale (pas email-validator: trop strict pour les domaines internes type .local)
+    if value.count("@") != 1 or value.startswith("@") or value.endswith("@"):
+        raise ValueError("format d'email invalide")
+    local_part, _, domain = value.partition("@")
+    if not local_part or "." not in domain:
+        raise ValueError("format d'email invalide")
+    return value
+
+
 # ---------- Users ----------
 class UserBase(BaseModel):
-    email: EmailStr
+    email: str
     full_name: str
     role: UserRole = UserRole.PILOTE_AUDIT
+
+    email_format_validator = field_validator("email")(_validate_email_format)
 
 
 class UserCreate(UserBase):
@@ -39,8 +51,10 @@ class Token(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str
     password: str
+
+    email_format_validator = field_validator("email")(_validate_email_format)
 
 
 # ---------- Categories ----------

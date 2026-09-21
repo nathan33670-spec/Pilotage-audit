@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, Box, Button, Paper, TextField, Typography } from "@mui/material";
+import axios from "axios";
 import { useAuth } from "../auth/AuthContext";
 
 export function Login() {
@@ -18,8 +19,18 @@ export function Login() {
     try {
       await login(email, password);
       navigate("/");
-    } catch {
-      setError("Email ou mot de passe incorrect");
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          setError("Email ou mot de passe incorrect");
+        } else if (err.response) {
+          setError(`Erreur serveur (${err.response.status}): ${err.response.data?.detail ?? "réessayez plus tard"}`);
+        } else {
+          setError("Impossible de contacter le serveur");
+        }
+      } else {
+        setError("Une erreur inattendue est survenue");
+      }
     } finally {
       setSubmitting(false);
     }
