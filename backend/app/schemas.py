@@ -107,6 +107,41 @@ class TemplateOut(BaseModel):
     items: list[TemplateItemOut] = []
 
 
+# ---------- Phase templates ----------
+class PhaseTemplateItemBase(BaseModel):
+    name: str
+    position: int = 0
+    duration_days: int = 1
+
+
+class PhaseTemplateItemCreate(PhaseTemplateItemBase):
+    pass
+
+
+class PhaseTemplateItemOut(PhaseTemplateItemBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+
+
+class PhaseTemplateBase(BaseModel):
+    name: str
+    description: str | None = None
+    category_id: str
+
+
+class PhaseTemplateCreate(PhaseTemplateBase):
+    items: list[PhaseTemplateItemCreate] = []
+
+
+class PhaseTemplateOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    name: str
+    description: str | None
+    category_id: str
+    items: list[PhaseTemplateItemOut] = []
+
+
 # ---------- Prestation companies ----------
 class PrestationCompanyBase(BaseModel):
     name: str
@@ -145,8 +180,8 @@ class PrestationConsumptionOut(BaseModel):
 class AuditPhaseBase(BaseModel):
     name: str
     position: int = 0
-    start_date: date
-    end_date: date
+    start_date: date | None = None
+    end_date: date | None = None
     status: PhaseStatus = PhaseStatus.PLANIFIE
     confirmed: bool = False
     auditor_id: str | None = None
@@ -223,6 +258,9 @@ class AuditBase(BaseModel):
     status: AuditStatus = AuditStatus.BROUILLON
     pilot_id: str | None = None
     service_owner_id: str | None = None
+    contact_name: str | None = None
+    contact_email: str | None = None
+    contact_phone: str | None = None
     prestation_company_id: str | None = None
     planned_start: date | None = None
     planned_end: date | None = None
@@ -230,6 +268,7 @@ class AuditBase(BaseModel):
 
 class AuditCreate(AuditBase):
     apply_template_id: str | None = None
+    apply_phase_template_id: str | None = None
 
 
 class AuditUpdate(BaseModel):
@@ -240,6 +279,9 @@ class AuditUpdate(BaseModel):
     status: AuditStatus | None = None
     pilot_id: str | None = None
     service_owner_id: str | None = None
+    contact_name: str | None = None
+    contact_email: str | None = None
+    contact_phone: str | None = None
     prestation_company_id: str | None = None
     planned_start: date | None = None
     planned_end: date | None = None
@@ -267,10 +309,14 @@ class PlanningPhaseOut(BaseModel):
     priority: AuditPriority
     status: PhaseStatus
     confirmed: bool
-    start_date: date
-    end_date: date
+    start_date: date | None
+    end_date: date | None
     auditor_id: str | None
     auditor_name: str | None
+    pilot_id: str | None
+    pilot_name: str | None
+    prestation_company_id: str | None
+    prestation_company_name: str | None
 
 
 class AuditorWorkloadOut(BaseModel):

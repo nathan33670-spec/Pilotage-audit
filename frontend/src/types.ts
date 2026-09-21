@@ -43,6 +43,21 @@ export interface Template {
   items: TemplateItem[];
 }
 
+export interface PhaseTemplateItem {
+  id: string;
+  name: string;
+  position: number;
+  duration_days: number;
+}
+
+export interface PhaseTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  category_id: string;
+  items: PhaseTemplateItem[];
+}
+
 export interface PrestationCompany {
   id: string;
   name: string;
@@ -64,8 +79,8 @@ export interface AuditPhase {
   audit_id: string;
   name: string;
   position: number;
-  start_date: string;
-  end_date: string;
+  start_date: string | null;
+  end_date: string | null;
   status: PhaseStatus;
   confirmed: boolean;
   auditor_id: string | null;
@@ -104,6 +119,9 @@ export interface Audit {
   status: AuditStatus;
   pilot_id: string | null;
   service_owner_id: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
   prestation_company_id: string | null;
   planned_start: string | null;
   planned_end: string | null;
@@ -125,10 +143,14 @@ export interface PlanningPhase {
   priority: AuditPriority;
   status: PhaseStatus;
   confirmed: boolean;
-  start_date: string;
-  end_date: string;
+  start_date: string | null;
+  end_date: string | null;
   auditor_id: string | null;
   auditor_name: string | null;
+  pilot_id: string | null;
+  pilot_name: string | null;
+  prestation_company_id: string | null;
+  prestation_company_name: string | null;
 }
 
 export interface AuditorWorkload {

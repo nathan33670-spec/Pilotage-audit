@@ -90,6 +90,7 @@ class Category(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     templates = relationship("PrerequisiteTemplate", back_populates="category", cascade="all, delete-orphan")
+    phase_templates = relationship("PhaseTemplate", back_populates="category", cascade="all, delete-orphan")
     audits = relationship("Audit", back_populates="category")
 
 
@@ -119,6 +120,32 @@ class PrerequisiteTemplateItem(Base):
     template = relationship("PrerequisiteTemplate", back_populates="items")
 
 
+class PhaseTemplate(Base):
+    __tablename__ = "phase_templates"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    category_id: Mapped[str] = mapped_column(ForeignKey("categories.id", ondelete="CASCADE"))
+    name: Mapped[str] = mapped_column(String(255))
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    category = relationship("Category", back_populates="phase_templates")
+    items = relationship(
+        "PhaseTemplateItem", back_populates="template", cascade="all, delete-orphan", order_by="PhaseTemplateItem.position"
+    )
+
+
+class PhaseTemplateItem(Base):
+    __tablename__ = "phase_template_items"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    template_id: Mapped[str] = mapped_column(ForeignKey("phase_templates.id", ondelete="CASCADE"))
+    name: Mapped[str] = mapped_column(String(255))
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    duration_days: Mapped[int] = mapped_column(Integer, default=1)
+
+    template = relationship("PhaseTemplate", back_populates="items")
+
+
 class PrestationCompany(Base):
     __tablename__ = "prestation_companies"
 
@@ -144,6 +171,9 @@ class Audit(Base):
     status: Mapped[AuditStatus] = mapped_column(Enum(AuditStatus), default=AuditStatus.BROUILLON)
     pilot_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     service_owner_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    contact_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    contact_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    contact_phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     prestation_company_id: Mapped[str | None] = mapped_column(ForeignKey("prestation_companies.id"), nullable=True)
     planned_start: Mapped[date | None] = mapped_column(Date, nullable=True)
     planned_end: Mapped[date | None] = mapped_column(Date, nullable=True)
@@ -154,7 +184,7 @@ class Audit(Base):
     pilot = relationship("User", foreign_keys=[pilot_id], back_populates="piloted_audits")
     service_owner = relationship("User", foreign_keys=[service_owner_id], back_populates="owned_audits")
     prestation_company = relationship("PrestationCompany", back_populates="audits")
-    phases = relationship("AuditPhase", back_populates="audit", cascade="all, delete-orphan", order_by="AuditPhase.start_date")
+    phases = relationship("AuditPhase", back_populates="audit", cascade="all, delete-orphan", order_by="AuditPhase.position")
     prerequisites = relationship("AuditPrerequisite", back_populates="audit", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="audit", cascade="all, delete-orphan")
 
@@ -166,8 +196,8 @@ class AuditPhase(Base):
     audit_id: Mapped[str] = mapped_column(ForeignKey("audits.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(String(255))
     position: Mapped[int] = mapped_column(Integer, default=0)
-    start_date: Mapped[date] = mapped_column(Date)
-    end_date: Mapped[date] = mapped_column(Date)
+    start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     status: Mapped[PhaseStatus] = mapped_column(Enum(PhaseStatus), default=PhaseStatus.PLANIFIE)
     confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
     auditor_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)

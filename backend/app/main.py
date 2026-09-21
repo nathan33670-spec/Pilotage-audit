@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.database import Base, SessionLocal, engine
 from app.models import AuthProvider, User, UserRole
-from app.routers import audits, auth, categories, documents, planning, prestations, templates, users
+from app.routers import audits, auth, categories, documents, phase_templates, planning, prestations, templates, users
 from app.security import hash_password
 
 logger = logging.getLogger("uvicorn")
@@ -27,6 +27,7 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(categories.router)
 app.include_router(templates.router)
+app.include_router(phase_templates.router)
 app.include_router(prestations.router)
 app.include_router(audits.router)
 app.include_router(planning.router)

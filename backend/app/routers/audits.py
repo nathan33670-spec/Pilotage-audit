@@ -1,11 +1,20 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
 from app.deps import get_current_user, require_pilote_or_admin
-from app.models import Audit, AuditPhase, AuditPrerequisite, AuditPriority, AuditStatus, PrerequisiteTemplate, User
+from app.models import (
+    Audit,
+    AuditPhase,
+    AuditPrerequisite,
+    AuditPriority,
+    AuditStatus,
+    PhaseTemplate,
+    PrerequisiteTemplate,
+    User,
+)
 from app.schemas import (
     AuditCreate,
     AuditDetailOut,
@@ -27,6 +36,25 @@ def _get_audit_or_404(db: Session, audit_id: str) -> Audit:
     if audit is None:
         raise HTTPException(status_code=404, detail="Audit introuvable")
     return audit
+
+
+def _apply_phase_template(audit: Audit, template: PhaseTemplate, position_offset: int = 0) -> None:
+    """Cree les phases a partir du template. Les dates sont calculees en cascade
+    depuis la date de debut prevue de l'audit si elle est connue, sinon laissees vides."""
+    cursor: date | None = audit.planned_start
+    for item in template.items:
+        start = cursor
+        end = cursor + timedelta(days=max(item.duration_days, 1) - 1) if cursor else None
+        audit.phases.append(
+            AuditPhase(
+                name=item.name,
+                position=item.position + position_offset,
+                start_date=start,
+                end_date=end,
+            )
+        )
+        if cursor and end:
+            cursor = end + timedelta(days=1)
 
 
 @router.get("", response_model=list[AuditOut])
@@ -55,7 +83,7 @@ def list_audits(
 
 @router.post("", response_model=AuditDetailOut, status_code=201)
 def create_audit(payload: AuditCreate, db: Session = Depends(get_db), _: User = Depends(require_pilote_or_admin)):
-    data = payload.model_dump(exclude={"apply_template_id"})
+    data = payload.model_dump(exclude={"apply_template_id", "apply_phase_template_id"})
     audit = Audit(**data)
     db.add(audit)
     db.flush()
@@ -72,6 +100,30 @@ def create_audit(payload: AuditCreate, db: Session = Depends(get_db), _: User = 
                     is_mandatory=item.is_mandatory,
                 )
             )
+
+    if payload.apply_phase_template_id:
+        phase_template = db.get(PhaseTemplate, payload.apply_phase_template_id)
+        if phase_template is None:
+            raise HTTPException(status_code=404, detail="Template de phases introuvable")
+        _apply_phase_template(audit, phase_template)
+
+    db.commit()
+    db.refresh(audit)
+    return audit
+
+
+@router.post("/{audit_id}/apply-phase-template/{template_id}", response_model=AuditDetailOut)
+def apply_phase_template(
+    audit_id: str, template_id: str, db: Session = Depends(get_db), _: User = Depends(require_pilote_or_admin)
+):
+    """Ajoute les phases d'un template a un audit existant (en plus des phases deja presentes)."""
+    audit = _get_audit_or_404(db, audit_id)
+    phase_template = db.get(PhaseTemplate, template_id)
+    if phase_template is None:
+        raise HTTPException(status_code=404, detail="Template de phases introuvable")
+
+    base_position = max((p.position for p in audit.phases), default=-1) + 1
+    _apply_phase_template(audit, phase_template, position_offset=base_position)
 
     db.commit()
     db.refresh(audit)

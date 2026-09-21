@@ -28,7 +28,7 @@ import { apiClient } from "../api/client";
 import { PriorityChip, StatusChip } from "../components/StatusChips";
 import { PHASE_STATUS_COLORS } from "../theme";
 import { useAuth } from "../auth/AuthContext";
-import type { AuditDetail, AuditPriority, AuditStatus, Category, PhaseStatus, PrestationCompany, User } from "../types";
+import type { AuditDetail, AuditPriority, AuditStatus, Category, PhaseStatus, PhaseTemplate, PrestationCompany, User } from "../types";
 
 const PRIORITIES: AuditPriority[] = ["basse", "moyenne", "haute", "critique"];
 const STATUSES: AuditStatus[] = ["brouillon", "planifie", "en_cours", "en_attente", "bloque", "termine", "annule"];
@@ -42,8 +42,10 @@ export function AuditDetailPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [companies, setCompanies] = useState<PrestationCompany[]>([]);
+  const [phaseTemplates, setPhaseTemplates] = useState<PhaseTemplate[]>([]);
   const [openPhaseDialog, setOpenPhaseDialog] = useState(false);
   const [phaseForm, setPhaseForm] = useState({ name: "", start_date: "", end_date: "", auditor_id: "", auditor_external_name: "" });
+  const [applyPhaseTemplateId, setApplyPhaseTemplateId] = useState("");
   const [newPrereqLabel, setNewPrereqLabel] = useState("");
 
   const canManage = user?.role === "admin" || user?.role === "pilote_audit";
@@ -58,6 +60,7 @@ export function AuditDetailPage() {
     apiClient.get<Category[]>("/api/categories").then((r) => setCategories(r.data));
     apiClient.get<User[]>("/api/users").then((r) => setUsers(r.data));
     apiClient.get<PrestationCompany[]>("/api/prestation-companies").then((r) => setCompanies(r.data));
+    apiClient.get<PhaseTemplate[]>("/api/phase-templates").then((r) => setPhaseTemplates(r.data));
   }, [load]);
 
   if (!audit) return <Typography>Chargement…</Typography>;
@@ -72,11 +75,20 @@ export function AuditDetailPage() {
   const addPhase = async () => {
     await apiClient.post(`/api/audits/${id}/phases`, {
       ...phaseForm,
+      start_date: phaseForm.start_date || null,
+      end_date: phaseForm.end_date || null,
       auditor_id: phaseForm.auditor_id || null,
       auditor_external_name: phaseForm.auditor_external_name || null,
     });
     setOpenPhaseDialog(false);
     setPhaseForm({ name: "", start_date: "", end_date: "", auditor_id: "", auditor_external_name: "" });
+    load();
+  };
+
+  const applyPhaseTemplate = async () => {
+    if (!applyPhaseTemplateId) return;
+    await apiClient.post(`/api/audits/${id}/apply-phase-template/${applyPhaseTemplateId}`);
+    setApplyPhaseTemplateId("");
     load();
   };
 
@@ -87,6 +99,11 @@ export function AuditDetailPage() {
 
   const updatePhaseStatus = async (phaseId: string, status: PhaseStatus) => {
     await apiClient.patch(`/api/audits/${id}/phases/${phaseId}`, { status });
+    load();
+  };
+
+  const updatePhaseSchedule = async (phaseId: string, data: { start_date?: string | null; end_date?: string | null; auditor_id?: string | null }) => {
+    await apiClient.patch(`/api/audits/${id}/phases/${phaseId}`, data);
     load();
   };
 
@@ -177,12 +194,33 @@ export function AuditDetailPage() {
                       {companies.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
                     </TextField>
                   </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Contact responsable (nom)"
+                      value={audit.contact_name ?? ""}
+                      onBlur={(e) => patchAudit({ contact_name: e.target.value || null })}
+                      onChange={(e) => setAudit({ ...audit, contact_name: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Contact (email/tél.)"
+                      value={audit.contact_email ?? ""}
+                      onBlur={(e) => patchAudit({ contact_email: e.target.value || null })}
+                      onChange={(e) => setAudit({ ...audit, contact_email: e.target.value })}
+                    />
+                  </Grid>
                 </Grid>
               )}
 
               <Divider sx={{ my: 2 }} />
               <Typography variant="body2"><b>Catégorie :</b> {categories.find((c) => c.id === audit.category_id)?.name ?? "—"}</Typography>
               <Typography variant="body2"><b>Responsable de service :</b> {userName(audit.service_owner_id)}</Typography>
+              <Typography variant="body2"><b>Contact responsable :</b> {audit.contact_name ?? "—"} {audit.contact_email && `(${audit.contact_email})`}</Typography>
               <Typography variant="body2"><b>Période prévue :</b> {audit.planned_start ?? "?"} → {audit.planned_end ?? "?"}</Typography>
             </CardContent>
           </Card>
@@ -191,29 +229,78 @@ export function AuditDetailPage() {
             <CardContent>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                 <Typography variant="h6">Phases</Typography>
-                {canManage && <Button size="small" startIcon={<AddIcon />} onClick={() => setOpenPhaseDialog(true)}>Ajouter une phase</Button>}
+                {canManage && (
+                  <Stack direction="row" spacing={1}>
+                    <TextField
+                      select
+                      size="small"
+                      label="Appliquer un template"
+                      value={applyPhaseTemplateId}
+                      onChange={(e) => setApplyPhaseTemplateId(e.target.value)}
+                      sx={{ minWidth: 180 }}
+                    >
+                      <MenuItem value="">—</MenuItem>
+                      {phaseTemplates.map((t) => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
+                    </TextField>
+                    <Button size="small" onClick={applyPhaseTemplate} disabled={!applyPhaseTemplateId}>Appliquer</Button>
+                    <Button size="small" startIcon={<AddIcon />} onClick={() => setOpenPhaseDialog(true)}>Ajouter une phase</Button>
+                  </Stack>
+                )}
               </Stack>
               {audit.phases.length === 0 && <Typography color="text.secondary">Aucune phase définie.</Typography>}
               {audit.phases.map((phase) => (
-                <Box key={phase.id} sx={{ display: "flex", alignItems: "center", gap: 1, py: 1, borderBottom: "1px solid", borderColor: "divider" }}>
-                  <Chip size="small" label={phase.status} sx={{ bgcolor: PHASE_STATUS_COLORS[phase.status], color: "#fff" }} />
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="body2" fontWeight={600}>{phase.name}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {phase.start_date} → {phase.end_date} · {phase.auditor_id ? userName(phase.auditor_id) : (phase.auditor_external_name || "non assigné")}
-                    </Typography>
-                  </Box>
-                  {canManage && (
-                    <>
-                      <FormControlLabel
-                        control={<Checkbox size="small" checked={phase.confirmed} onChange={(e) => togglePhaseConfirmed(phase.id, e.target.checked)} />}
-                        label="Confirmé"
+                <Box key={phase.id} sx={{ py: 1, borderBottom: "1px solid", borderColor: "divider" }}>
+                  <Stack direction="row" alignItems="center" gap={1}>
+                    <Chip size="small" label={phase.status} sx={{ bgcolor: PHASE_STATUS_COLORS[phase.status], color: "#fff" }} />
+                    <Typography variant="body2" fontWeight={600} sx={{ flexGrow: 1 }}>{phase.name}</Typography>
+                    {canManage && (
+                      <>
+                        <FormControlLabel
+                          control={<Checkbox size="small" checked={phase.confirmed} onChange={(e) => togglePhaseConfirmed(phase.id, e.target.checked)} />}
+                          label="Confirmé"
+                        />
+                        <TextField select size="small" value={phase.status} onChange={(e) => updatePhaseStatus(phase.id, e.target.value as PhaseStatus)} sx={{ width: 130 }}>
+                          {PHASE_STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+                        </TextField>
+                        <IconButton size="small" onClick={() => deletePhase(phase.id)}><DeleteIcon fontSize="small" /></IconButton>
+                      </>
+                    )}
+                  </Stack>
+                  {canManage ? (
+                    <Stack direction="row" spacing={1} sx={{ mt: 1, ml: 4.5 }}>
+                      <TextField
+                        type="date"
+                        size="small"
+                        label="Début"
+                        InputLabelProps={{ shrink: true }}
+                        value={phase.start_date ?? ""}
+                        onChange={(e) => updatePhaseSchedule(phase.id, { start_date: e.target.value || null })}
                       />
-                      <TextField select size="small" value={phase.status} onChange={(e) => updatePhaseStatus(phase.id, e.target.value as PhaseStatus)} sx={{ width: 130 }}>
-                        {PHASE_STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+                      <TextField
+                        type="date"
+                        size="small"
+                        label="Fin"
+                        InputLabelProps={{ shrink: true }}
+                        value={phase.end_date ?? ""}
+                        onChange={(e) => updatePhaseSchedule(phase.id, { end_date: e.target.value || null })}
+                      />
+                      <TextField
+                        select
+                        size="small"
+                        label="Auditeur / pilote de phase"
+                        value={phase.auditor_id ?? ""}
+                        onChange={(e) => updatePhaseSchedule(phase.id, { auditor_id: e.target.value || null })}
+                        sx={{ minWidth: 200 }}
+                      >
+                        <MenuItem value="">{phase.auditor_external_name || "Non assigné"}</MenuItem>
+                        {users.map((u) => <MenuItem key={u.id} value={u.id}>{u.full_name}</MenuItem>)}
                       </TextField>
-                      <IconButton size="small" onClick={() => deletePhase(phase.id)}><DeleteIcon fontSize="small" /></IconButton>
-                    </>
+                    </Stack>
+                  ) : (
+                    <Typography variant="caption" color="text.secondary" sx={{ ml: 4.5 }}>
+                      {phase.start_date && phase.end_date ? `${phase.start_date} → ${phase.end_date}` : "Non planifié"} ·{" "}
+                      {phase.auditor_id ? userName(phase.auditor_id) : phase.auditor_external_name || "non assigné"}
+                    </Typography>
                   )}
                 </Box>
               ))}
@@ -284,7 +371,7 @@ export function AuditDetailPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenPhaseDialog(false)}>Annuler</Button>
-          <Button variant="contained" onClick={addPhase} disabled={!phaseForm.name || !phaseForm.start_date || !phaseForm.end_date}>Ajouter</Button>
+          <Button variant="contained" onClick={addPhase} disabled={!phaseForm.name}>Ajouter</Button>
         </DialogActions>
       </Dialog>
     </Box>
