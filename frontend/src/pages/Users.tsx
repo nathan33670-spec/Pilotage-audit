@@ -35,7 +35,9 @@ export function Users() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ email: "", full_name: "", role: "pilote_audit" as UserRole, password: "" });
 
-  const load = () => apiClient.get<User[]>("/api/users").then((r) => setUsers(r.data));
+  const load = () => {
+    apiClient.get<User[]>("/api/users").then((r) => setUsers(r.data));
+  };
   useEffect(load, []);
 
   const create = async () => {

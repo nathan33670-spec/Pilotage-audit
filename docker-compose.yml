@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: ${DOCKER_BASE_REGISTRY:-docker.io/library}/postgres:16-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-audit}
@@ -15,7 +15,12 @@ services:
       retries: 10
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        BASE_REGISTRY: ${DOCKER_BASE_REGISTRY:-docker.io/library}
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
+        PIP_TRUSTED_HOST: ${PIP_TRUSTED_HOST:-pypi.org}
     restart: unless-stopped
     depends_on:
       db:
@@ -36,7 +41,12 @@ services:
       - uploads_data:/data/uploads
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        BASE_REGISTRY: ${DOCKER_BASE_REGISTRY:-docker.io/library}
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org/}
+        NPM_STRICT_SSL: ${NPM_STRICT_SSL:-true}
     restart: unless-stopped
     depends_on:
       - backend
