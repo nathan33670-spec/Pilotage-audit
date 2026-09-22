@@ -142,6 +142,14 @@ L'application est accessible sur `http://<adresse-du-NAS>:9090`. Se connecter
 avec `ADMIN_EMAIL` / `ADMIN_PASSWORD`, **changer ce mot de passe immédiatement**,
 puis créer les comptes de l'équipe.
 
+Pour une démonstration, l'application peut être remplie d'une année type de
+données fictives en une commande (voir
+[jeu-de-demonstration.md](jeu-de-demonstration.md)) :
+
+```bash
+sudo docker compose exec backend python -m scripts.seed_demo
+```
+
 ## 5. Accès en HTTPS (recommandé)
 
 Le conteneur frontend sert du HTTP en clair. Pour exposer l'application avec un

@@ -20,6 +20,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
+# Scripts utilitaires exécutables dans le conteneur (jeu de démonstration…)
+COPY scripts ./scripts
 
 RUN useradd --create-home appuser \
     && mkdir -p /data/uploads \
