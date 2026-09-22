@@ -58,7 +58,7 @@ Contrôle par rôle à chaque point d'entrée (`require_admin`,
 1. Changer `SECRET_KEY`, `POSTGRES_PASSWORD` et le mot de passe administrateur.
 2. Restreindre `CORS_ORIGINS` à l'URL réelle de l'application.
 3. Placer l'application derrière un terminateur **TLS** (le Compose fourni expose
-   du HTTP en clair sur le port 8080).
+   du HTTP en clair sur le port 9090).
 4. Restreindre l'accès réseau à la base de données au seul backend.
 5. Mettre en place la sauvegarde chiffrée des volumes (base et documents).
 6. Revoir périodiquement les comptes (`admin` en particulier) et désactiver ceux

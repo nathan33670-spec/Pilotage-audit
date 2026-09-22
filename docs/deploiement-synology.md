@@ -60,8 +60,8 @@ SECRET_KEY=<valeur aléatoire, ex. openssl rand -hex 32>
 ADMIN_PASSWORD=<mot de passe du compte administrateur initial>
 ADMIN_EMAIL=prenom.nom@exemple.fr
 
-HTTP_PORT=8080                                   # port d'écoute sur le NAS
-CORS_ORIGINS=["http://192.168.1.50:8080"]        # URL réelle d'accès
+HTTP_PORT=9090                                   # port d'écoute sur le NAS
+CORS_ORIGINS=["http://192.168.1.50:9090"]        # URL réelle d'accès
 ```
 
 Générer les secrets sans les inventer :
@@ -71,9 +71,16 @@ openssl rand -hex 32     # pour SECRET_KEY
 openssl rand -base64 24  # pour les mots de passe
 ```
 
-> **Port** : 5000, 5001 (DSM), 80 et 443 (Web Station) sont déjà pris. 8080 est
-> libre sur la plupart des installations ; en cas de conflit, choisir 8081 ou
-> 9080 et l'indiquer dans `HTTP_PORT` **et** dans `CORS_ORIGINS`.
+> **Port** : 5000 et 5001 (DSM), 80 et 443 (Web Station) sont déjà pris. Le port
+> par défaut de l'application est 9090 ; vérifier qu'il est libre avant de
+> démarrer :
+>
+> ```bash
+> sudo netstat -tlnp | grep 9090     # aucune sortie = port disponible
+> ```
+>
+> En cas de conflit, choisir une autre valeur (9091, 8088…) et l'indiquer dans
+> `HTTP_PORT` **et** dans `CORS_ORIGINS`.
 
 ## 3. Stocker les données dans un dossier partagé
 
@@ -128,10 +135,10 @@ Vérifier le démarrage :
 ```bash
 sudo docker compose ps
 sudo docker compose logs -f backend
-curl -s http://localhost:8080/api/health     # {"status":"ok","version":"..."}
+curl -s http://localhost:9090/api/health     # {"status":"ok","version":"..."}
 ```
 
-L'application est accessible sur `http://<adresse-du-NAS>:8080`. Se connecter
+L'application est accessible sur `http://<adresse-du-NAS>:9090`. Se connecter
 avec `ADMIN_EMAIL` / `ADMIN_PASSWORD`, **changer ce mot de passe immédiatement**,
 puis créer les comptes de l'équipe.
 
@@ -143,7 +150,7 @@ certificat, utiliser le proxy inverse de DSM :
 1. Panneau de configuration → **Portail de connexion** → Avancé → **Proxy inversé**
    → Créer :
    - Source : `HTTPS`, nom d'hôte `audit.mondomaine.fr`, port `443`
-   - Destination : `HTTP`, `localhost`, port `8080`
+   - Destination : `HTTP`, `localhost`, port `9090`
 2. Panneau de configuration → **Sécurité** → Certificat : obtenir un certificat
    Let's Encrypt pour ce nom d'hôte et l'affecter au service créé.
 3. Mettre `CORS_ORIGINS=["https://audit.mondomaine.fr"]` dans `.env`, puis

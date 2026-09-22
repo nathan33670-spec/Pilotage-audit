@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     uploads_dir: str = "/data/uploads"
     max_upload_size_mb: int = 50
 
-    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:8080"]
+    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:9090"]
 
 
 @lru_cache

@@ -26,7 +26,7 @@ périmètre par choix).
    ```bash
    docker compose up --build -d
    ```
-3. Ouvrir <http://localhost:8080>.
+3. Ouvrir <http://localhost:9090>.
 4. Se connecter avec le compte administrateur créé au premier démarrage
    (`ADMIN_EMAIL` / `ADMIN_PASSWORD`), **changer immédiatement son mot de passe**,
    puis créer les comptes des pilotes d'audit et responsables de service.
