@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Box, Tab, Tabs, Typography } from "@mui/material";
-import { GanttView } from "../components/GanttView";
+import { PlanningTimeline } from "../components/PlanningTimeline";
 import { KanbanBoard } from "../components/KanbanBoard";
+import { WorkloadPanel } from "../components/WorkloadPanel";
 
-type PlanningTab = "kanban" | "gantt-audit" | "gantt-pilot" | "gantt-company";
+type PlanningTab = "kanban" | "timeline" | "charge";
 
 export function PlanningDashboard() {
   const [tab, setTab] = useState<PlanningTab>("kanban");
@@ -15,16 +16,14 @@ export function PlanningDashboard() {
       </Typography>
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
-        <Tab value="kanban" label="Kanban — tâches à faire" />
-        <Tab value="gantt-audit" label="Gantt — par audit" />
-        <Tab value="gantt-pilot" label="Gantt — par pilote" />
-        <Tab value="gantt-company" label="Gantt — par société" />
+        <Tab value="kanban" label="Kanban" />
+        <Tab value="timeline" label="Planning (échelles)" />
+        <Tab value="charge" label="Plan de charge" />
       </Tabs>
 
       {tab === "kanban" && <KanbanBoard />}
-      {tab === "gantt-audit" && <GanttView groupBy="audit" />}
-      {tab === "gantt-pilot" && <GanttView groupBy="pilot" />}
-      {tab === "gantt-company" && <GanttView groupBy="company" />}
+      {tab === "timeline" && <PlanningTimeline />}
+      {tab === "charge" && <WorkloadPanel />}
     </Box>
   );
 }

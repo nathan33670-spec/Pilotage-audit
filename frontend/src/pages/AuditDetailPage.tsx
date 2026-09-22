@@ -28,7 +28,18 @@ import { apiClient } from "../api/client";
 import { PriorityChip, StatusChip } from "../components/StatusChips";
 import { PHASE_STATUS_COLORS } from "../theme";
 import { useAuth } from "../auth/AuthContext";
-import type { AuditDetail, AuditPriority, AuditStatus, Category, PhaseStatus, PhaseTemplate, PrestationCompany, User } from "../types";
+import type {
+  AuditDetail,
+  AuditPriority,
+  AuditStatus,
+  Category,
+  CustomField,
+  PhaseStatus,
+  PhaseTemplate,
+  PrestationCompany,
+  Tag,
+  User,
+} from "../types";
 
 const PRIORITIES: AuditPriority[] = ["basse", "moyenne", "haute", "critique"];
 const STATUSES: AuditStatus[] = ["brouillon", "planifie", "en_cours", "en_attente", "bloque", "termine", "annule"];
@@ -43,6 +54,8 @@ export function AuditDetailPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [companies, setCompanies] = useState<PrestationCompany[]>([]);
   const [phaseTemplates, setPhaseTemplates] = useState<PhaseTemplate[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [openPhaseDialog, setOpenPhaseDialog] = useState(false);
   const [phaseForm, setPhaseForm] = useState({ name: "", start_date: "", end_date: "", auditor_id: "", auditor_external_name: "" });
   const [applyPhaseTemplateId, setApplyPhaseTemplateId] = useState("");
@@ -61,15 +74,21 @@ export function AuditDetailPage() {
     apiClient.get<User[]>("/api/users").then((r) => setUsers(r.data));
     apiClient.get<PrestationCompany[]>("/api/prestation-companies").then((r) => setCompanies(r.data));
     apiClient.get<PhaseTemplate[]>("/api/phase-templates").then((r) => setPhaseTemplates(r.data));
+    apiClient.get<Tag[]>("/api/tags").then((r) => setTags(r.data));
+    apiClient.get<CustomField[]>("/api/custom-fields").then((r) => setCustomFields(r.data));
   }, [load]);
 
   if (!audit) return <Typography>Chargement…</Typography>;
 
   const userName = (uid: string | null) => users.find((u) => u.id === uid)?.full_name ?? "—";
 
-  const patchAudit = async (data: Partial<AuditDetail>) => {
+  const patchAudit = async (data: Record<string, unknown>) => {
     await apiClient.patch(`/api/audits/${id}`, data);
     load();
+  };
+
+  const setCustomField = async (key: string, value: string) => {
+    await patchAudit({ custom_fields: { [key]: value || null } });
   };
 
   const addPhase = async () => {
@@ -102,7 +121,16 @@ export function AuditDetailPage() {
     load();
   };
 
-  const updatePhaseSchedule = async (phaseId: string, data: { start_date?: string | null; end_date?: string | null; auditor_id?: string | null }) => {
+  const updatePhaseSchedule = async (
+    phaseId: string,
+    data: {
+      start_date?: string | null;
+      end_date?: string | null;
+      actual_start_date?: string | null;
+      actual_end_date?: string | null;
+      auditor_id?: string | null;
+    }
+  ) => {
     await apiClient.patch(`/api/audits/${id}/phases/${phaseId}`, data);
     load();
   };
@@ -162,7 +190,12 @@ export function AuditDetailPage() {
           <Card variant="outlined">
             <CardContent>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography variant="h5" fontWeight={700}>{audit.name}</Typography>
+                <Box>
+                  {audit.reference && (
+                    <Typography variant="overline" color="text.secondary">{audit.reference}</Typography>
+                  )}
+                  <Typography variant="h5" fontWeight={700}>{audit.name}</Typography>
+                </Box>
                 <Stack direction="row" spacing={1}>
                   <PriorityChip priority={audit.priority} />
                   <StatusChip status={audit.status} />
@@ -214,6 +247,105 @@ export function AuditDetailPage() {
                       onChange={(e) => setAudit({ ...audit, contact_email: e.target.value })}
                     />
                   </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      fullWidth size="small" label="Référence / identifiant TI"
+                      value={audit.reference ?? ""}
+                      onBlur={(e) => patchAudit({ reference: e.target.value || null })}
+                      onChange={(e) => setAudit({ ...audit, reference: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      select fullWidth size="small" label="Catégorie" value={audit.category_id ?? ""}
+                      onChange={(e) => patchAudit({ category_id: e.target.value || null })}
+                    >
+                      <MenuItem value="">Aucune</MenuItem>
+                      {categories.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+                    </TextField>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      type="date" fullWidth size="small" label="Début prévu" InputLabelProps={{ shrink: true }}
+                      value={audit.planned_start ?? ""}
+                      onChange={(e) => patchAudit({ planned_start: e.target.value || null })}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      type="date" fullWidth size="small" label="Fin prévue" InputLabelProps={{ shrink: true }}
+                      value={audit.planned_end ?? ""}
+                      onChange={(e) => patchAudit({ planned_end: e.target.value || null })}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      type="date" fullWidth size="small" label="Début réel" InputLabelProps={{ shrink: true }}
+                      value={audit.actual_start ?? ""}
+                      onChange={(e) => patchAudit({ actual_start: e.target.value || null })}
+                      helperText="Alimente les statistiques de temps réels"
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      type="date" fullWidth size="small" label="Fin réelle" InputLabelProps={{ shrink: true }}
+                      value={audit.actual_end ?? ""}
+                      onChange={(e) => patchAudit({ actual_end: e.target.value || null })}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      select fullWidth size="small" label="Étiquettes"
+                      SelectProps={{
+                        multiple: true,
+                        renderValue: (selected) => (
+                          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                            {(selected as string[]).map((tagId) => (
+                              <Chip key={tagId} size="small" label={tags.find((t) => t.id === tagId)?.name ?? tagId} />
+                            ))}
+                          </Stack>
+                        ),
+                      }}
+                      value={audit.tag_ids ?? []}
+                      onChange={(e) =>
+                        patchAudit({
+                          tag_ids: typeof e.target.value === "string" ? e.target.value.split(",") : e.target.value,
+                        })
+                      }
+                    >
+                      {tags.map((tag) => <MenuItem key={tag.id} value={tag.id}>{tag.name}</MenuItem>)}
+                    </TextField>
+                  </Grid>
+                  {customFields.map((field) => (
+                    <Grid item xs={6} key={field.id}>
+                      {field.field_type === "liste" ? (
+                        <TextField
+                          select fullWidth size="small" label={field.label}
+                          value={audit.custom_fields?.[field.key] ?? ""}
+                          onChange={(e) => setCustomField(field.key, e.target.value)}
+                        >
+                          <MenuItem value="">—</MenuItem>
+                          {(field.options ?? []).map((option) => (
+                            <MenuItem key={option} value={option}>{option}</MenuItem>
+                          ))}
+                        </TextField>
+                      ) : (
+                        <TextField
+                          fullWidth size="small" label={field.label}
+                          type={field.field_type === "date" ? "date" : field.field_type === "nombre" ? "number" : "text"}
+                          multiline={field.field_type === "texte_long"}
+                          InputLabelProps={field.field_type === "date" ? { shrink: true } : undefined}
+                          value={audit.custom_fields?.[field.key] ?? ""}
+                          onChange={(e) => setAudit({
+                            ...audit,
+                            custom_fields: { ...(audit.custom_fields ?? {}), [field.key]: e.target.value },
+                          })}
+                          onBlur={(e) => setCustomField(field.key, e.target.value)}
+                          helperText={field.description ?? undefined}
+                        />
+                      )}
+                    </Grid>
+                  ))}
                 </Grid>
               )}
 
@@ -222,6 +354,26 @@ export function AuditDetailPage() {
               <Typography variant="body2"><b>Responsable de service :</b> {userName(audit.service_owner_id)}</Typography>
               <Typography variant="body2"><b>Contact responsable :</b> {audit.contact_name ?? "—"} {audit.contact_email && `(${audit.contact_email})`}</Typography>
               <Typography variant="body2"><b>Période prévue :</b> {audit.planned_start ?? "?"} → {audit.planned_end ?? "?"}</Typography>
+              <Typography variant="body2"><b>Période réelle :</b> {audit.actual_start ?? "?"} → {audit.actual_end ?? "?"}</Typography>
+              {audit.tags?.length > 0 && (
+                <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
+                  {audit.tags.map((tag) => (
+                    <Chip key={tag.id} size="small" label={tag.name} variant="outlined"
+                      sx={{ borderColor: tag.color ?? undefined }} />
+                  ))}
+                </Stack>
+              )}
+              {customFields.filter((f) => audit.custom_fields?.[f.key]).length > 0 && (
+                <Box sx={{ mt: 1 }}>
+                  {customFields
+                    .filter((f) => audit.custom_fields?.[f.key])
+                    .map((field) => (
+                      <Typography key={field.id} variant="body2">
+                        <b>{field.label} :</b> {audit.custom_fields[field.key]}
+                      </Typography>
+                    ))}
+                </Box>
+              )}
             </CardContent>
           </Card>
 
@@ -285,6 +437,22 @@ export function AuditDetailPage() {
                         onChange={(e) => updatePhaseSchedule(phase.id, { end_date: e.target.value || null })}
                       />
                       <TextField
+                        type="date"
+                        size="small"
+                        label="Début réel"
+                        InputLabelProps={{ shrink: true }}
+                        value={phase.actual_start_date ?? ""}
+                        onChange={(e) => updatePhaseSchedule(phase.id, { actual_start_date: e.target.value || null })}
+                      />
+                      <TextField
+                        type="date"
+                        size="small"
+                        label="Fin réelle"
+                        InputLabelProps={{ shrink: true }}
+                        value={phase.actual_end_date ?? ""}
+                        onChange={(e) => updatePhaseSchedule(phase.id, { actual_end_date: e.target.value || null })}
+                      />
+                      <TextField
                         select
                         size="small"
                         label="Auditeur / pilote de phase"
@@ -298,8 +466,11 @@ export function AuditDetailPage() {
                     </Stack>
                   ) : (
                     <Typography variant="caption" color="text.secondary" sx={{ ml: 4.5 }}>
-                      {phase.start_date && phase.end_date ? `${phase.start_date} → ${phase.end_date}` : "Non planifié"} ·{" "}
-                      {phase.auditor_id ? userName(phase.auditor_id) : phase.auditor_external_name || "non assigné"}
+                      {phase.start_date && phase.end_date ? `${phase.start_date} → ${phase.end_date}` : "Non planifié"}
+                      {phase.actual_start_date && phase.actual_end_date
+                        ? ` · réel ${phase.actual_start_date} → ${phase.actual_end_date}`
+                        : ""}{" "}
+                      · {phase.auditor_id ? userName(phase.auditor_id) : phase.auditor_external_name || "non assigné"}
                     </Typography>
                   )}
                 </Box>

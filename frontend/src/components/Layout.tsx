@@ -22,7 +22,11 @@ import GroupsIcon from "@mui/icons-material/Groups";
 import BusinessIcon from "@mui/icons-material/Business";
 import ChecklistIcon from "@mui/icons-material/Checklist";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import InsightsIcon from "@mui/icons-material/Insights";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
 import LogoutIcon from "@mui/icons-material/Logout";
+import { Divider } from "@mui/material";
 import { useAuth } from "../auth/AuthContext";
 
 const DRAWER_WIDTH = 240;
@@ -30,10 +34,16 @@ const DRAWER_WIDTH = 240;
 const NAV_ITEMS = [
   { label: "Planification", path: "/", icon: <CalendarMonthIcon /> },
   { label: "Audits", path: "/audits", icon: <FactCheckIcon /> },
+  { label: "Tableaux de bord", path: "/statistiques", icon: <InsightsIcon /> },
+  { label: "Import en masse", path: "/import", icon: <UploadFileIcon /> },
   { label: "Auditeurs & charge", path: "/auditors", icon: <GroupsIcon /> },
   { label: "Sociétés de prestation", path: "/prestation-companies", icon: <BusinessIcon /> },
-  { label: "Templates de pré-requis", path: "/templates", icon: <ChecklistIcon /> },
+  { label: "Templates", path: "/templates", icon: <ChecklistIcon /> },
 ];
+
+const ADMIN_ITEMS = [{ label: "Administration", path: "/administration", icon: <AdminPanelSettingsIcon /> }];
+
+const HELP_ITEMS = [{ label: "Documentation", path: "/documentation", icon: <MenuBookIcon /> }];
 
 export function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
@@ -56,7 +66,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={() => setAnchorEl(null)}>
             <MenuItem disabled>{user?.full_name} ({user?.role})</MenuItem>
             {user?.role === "admin" && (
-              <MenuItem onClick={() => { navigate("/users"); setAnchorEl(null); }}>
+              <MenuItem onClick={() => { navigate("/administration?onglet=utilisateurs"); setAnchorEl(null); }}>
                 <AdminPanelSettingsIcon fontSize="small" sx={{ mr: 1 }} /> Utilisateurs
               </MenuItem>
             )}
@@ -77,6 +87,31 @@ export function Layout({ children }: { children: ReactNode }) {
         <Toolbar />
         <List>
           {NAV_ITEMS.map((item) => (
+            <ListItemButton
+              key={item.path}
+              component={Link}
+              to={item.path}
+              selected={location.pathname === item.path}
+            >
+              <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemText primary={item.label} />
+            </ListItemButton>
+          ))}
+          {user?.role === "admin" && <Divider sx={{ my: 1 }} />}
+          {user?.role === "admin" &&
+            ADMIN_ITEMS.map((item) => (
+              <ListItemButton
+                key={item.path}
+                component={Link}
+                to={item.path}
+                selected={location.pathname.startsWith(item.path)}
+              >
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.label} />
+              </ListItemButton>
+            ))}
+          <Divider sx={{ my: 1 }} />
+          {HELP_ITEMS.map((item) => (
             <ListItemButton
               key={item.path}
               component={Link}

@@ -68,6 +68,11 @@ def get_consumption(company_id: str, db: Session = Depends(get_db), _: User = De
     if audit_ids:
         phases = db.query(AuditPhase).filter(AuditPhase.audit_id.in_(audit_ids)).all()
         for phase in phases:
-            consumed_days += (phase.end_date - phase.start_date).days + 1
+            # priorité aux dates réelles ; les phases non datées ne consomment rien
+            start = phase.actual_start_date or phase.start_date
+            end = phase.actual_end_date or phase.end_date
+            if start is None or end is None or end < start:
+                continue
+            consumed_days += (end - start).days + 1
 
     return PrestationConsumptionOut(company=company, consumed_days=consumed_days, audits_count=len(audits))

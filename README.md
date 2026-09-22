@@ -1,16 +1,24 @@
 # Pilotage Audit
 
-Application de suivi et de planification des audits internes/externes : phases d'audit, plans de charge des pilotes/auditeurs, suivi des prestataires, pré-requis par catégorie, documents techniques. **Ne stocke pas les résultats d'audit ni les vulnérabilités** (hors périmètre par choix).
+Application de suivi et de planification des audits internes/externes et des
+tests d'intrusion (**TI**) : catégorisation, planification multi-échelles, kanban
+configurable, plans de charge des pilotes et auditeurs, suivi des prestataires,
+pré-requis par catégorie, documents techniques, tableaux de bord et import en
+masse. **Ne stocke ni les résultats d'audit ni les vulnérabilités** (hors
+périmètre par choix).
 
 ## Stack technique
 
-- **Backend** : Python / FastAPI / SQLAlchemy / PostgreSQL, authentification JWT locale (+ point d'extension SSO/OIDC)
-- **Frontend** : React + TypeScript + Vite + MUI (Material UI)
-- **Déploiement** : Docker Compose (3 services : `db`, `backend`, `frontend`), multi-plateforme (Windows/macOS/Linux)
+- **Backend** : Python / FastAPI / SQLAlchemy 2 / PostgreSQL 16, authentification
+  JWT locale (+ point d'extension SSO/OIDC)
+- **Frontend** : React + TypeScript + Vite + MUI, graphiques en SVG sans
+  dépendance externe
+- **Déploiement** : Docker Compose (`db`, `backend`, `frontend`), multi-plateforme
 
 ## Démarrage rapide (Docker)
 
-1. Copier le fichier d'environnement et renseigner des valeurs (mots de passe, `SECRET_KEY`) :
+1. Copier le fichier d'environnement et renseigner des valeurs (mots de passe,
+   `SECRET_KEY`) :
    ```bash
    cp .env.example .env
    ```
@@ -18,27 +26,80 @@ Application de suivi et de planification des audits internes/externes : phases d
    ```bash
    docker compose up --build -d
    ```
-3. Ouvrir [http://localhost:8080](http://localhost:8080).
-4. Se connecter avec le compte administrateur créé automatiquement au premier démarrage (`ADMIN_EMAIL` / `ADMIN_PASSWORD` définis dans `.env`), puis **changer immédiatement son mot de passe** et créer les comptes des pilotes d'audit / responsables de service.
+3. Ouvrir <http://localhost:8080>.
+4. Se connecter avec le compte administrateur créé au premier démarrage
+   (`ADMIN_EMAIL` / `ADMIN_PASSWORD`), **changer immédiatement son mot de passe**,
+   puis créer les comptes des pilotes d'audit et responsables de service.
 
-Les fichiers/documents uploadés sont conservés dans le volume Docker nommé `uploads_data` (persistant entre redémarrages).
+Les documents déposés sont conservés dans le volume `uploads_data`, la base dans
+`db_data` : ce sont les deux éléments à sauvegarder.
+
+## Fonctionnalités
+
+### Pilotage
+- **Kanban entièrement configurable** depuis le panneau d'administration :
+  création, renommage, couleur, ordre, masquage et suppression des colonnes,
+  limite d'en-cours (WIP), statut appliqué automatiquement, champs affichés sur
+  les cartes. La suppression d'une colonne déplace ses audits, jamais ne les perd.
+- **Planning multi-échelles** : jour, semaine, mois, trimestre, année, **cycle
+  pluriannuel** (3 ans par défaut), en fenêtre **alignée ou glissante**, avec
+  **sélection d'audits**, filtres (catégorie, étiquette, pilote, auditeur,
+  prestataire) et regroupement au choix. Le planifié et le réalisé sont
+  superposés ; les phases non confirmées sont en pointillés.
+- **Plan de charge** des auditeurs internes sur une période libre, avec alerte de
+  surcharge, et suivi des jours consommés par société de prestation.
+
+### Catégorisation
+- **Catégorie** (axe principal, porte les templates, une couleur, une durée type),
+- **étiquettes** transverses multiples,
+- **champs personnalisés** (texte, nombre, date, oui/non, liste) définis en ligne.
+
+Tous utilisables comme filtres dans les listes, le kanban, le planning et les
+tableaux de bord.
+
+### Tableaux de bord
+Volumétrie (statut, catégorie, priorité, prestataire, pilote, étiquette),
+activité dans le temps, **durées réelles vs planifiées**, écarts, taux de respect
+des délais, distribution des durées, détail par audit et export CSV.
+
+### Import en masse des TI
+Import CSV/XLSX en quatre étapes : dépôt, correspondance automatique des
+colonnes, **saisie des détails manquants** pour les catégories, sociétés, pilotes
+et étiquettes absents de la base, puis contrôle (erreurs, avertissements,
+doublons) et import. Les **colonnes qui n'existent pas encore en base** peuvent
+être créées automatiquement comme champs personnalisés. Rien n'est écrit avant la
+validation finale, et chaque lot conserve son rapport.
+
+### Cadre
+Templates de pré-requis et de phases par catégorie, documents techniques
+sécurisés par audit, priorités et statuts configurables.
 
 ## Rôles
 
 | Rôle | Droits |
 |---|---|
-| `admin` | Gestion complète (utilisateurs, catégories, templates, sociétés de prestation, tous les audits) |
-| `pilote_audit` | Crée/modifie les audits, phases, pré-requis, documents |
-| `responsable_service` | Consulte les audits de son périmètre, peut cocher les pré-requis, suit le statut |
+| `admin` | Administration complète (utilisateurs, catégories, étiquettes, kanban, champs personnalisés, sociétés, templates) et tous les audits |
+| `pilote_audit` | Crée/modifie les audits, phases, pré-requis, documents ; réalise les imports en masse |
+| `responsable_service` | Consulte les audits, coche les pré-requis, suit le statut |
 
-## Fonctionnalités principales
+## Documentation
 
-- **Planification graphique** : vue mensuelle type Gantt des phases d'audit, code couleur par priorité, distinction visuelle confirmé (trait plein) / non confirmé (pointillés).
-- **Plan de charge auditeurs** : calcul automatique de la charge assignée par auditeur sur une période.
-- **Suivi des sociétés de prestation** : jours alloués vs jours consommés (déduits des phases assignées).
-- **Templates de pré-requis par catégorie d'audit**, appliqués automatiquement à la création d'un audit.
-- **Documents/fichiers techniques** attachés à chaque audit (upload/téléchargement sécurisé).
-- **Priorité et statut** configurables sur chaque audit et chaque phase.
+La documentation complète est dans **[`docs/`](docs/README.md)** :
+
+| Document | Contenu |
+|---|---|
+| [guide-utilisateur.md](docs/guide-utilisateur.md) | Parcours quotidiens |
+| [guide-administrateur.md](docs/guide-administrateur.md) | Kanban, catégories, étiquettes, champs, comptes |
+| [import-en-masse.md](docs/import-en-masse.md) | Format de fichier, correspondances, doublons |
+| [planning.md](docs/planning.md) | Échelles, vue glissante, cycles |
+| [statistiques.md](docs/statistiques.md) | Indicateurs et définition des durées |
+| [architecture.md](docs/architecture.md) · [modele-de-donnees.md](docs/modele-de-donnees.md) · [api.md](docs/api.md) | Technique |
+| [exploitation.md](docs/exploitation.md) · [securite.md](docs/securite.md) | Déploiement, sauvegardes, sécurité |
+| [dimensionnement.md](docs/dimensionnement.md) | **Mesures de charge et limites** |
+| [developpement.md](docs/developpement.md) | Environnement local, tests, conventions |
+
+L'essentiel est aussi accessible **dans l'application** (menu « Documentation »),
+et la référence interactive de l'API sur `/api/docs`.
 
 ## Développement local (sans Docker)
 
@@ -46,26 +107,38 @@ Les fichiers/documents uploadés sont conservés dans le volume Docker nommé `u
 ```bash
 cd backend
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 export DATABASE_URL=postgresql+psycopg2://audit:audit@localhost:5432/audit
 export SECRET_KEY=dev-secret
 uvicorn app.main:app --reload
+python -m pytest tests -q      # suite de tests (SQLite, sans configuration)
 ```
 
 ### Frontend
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev      # http://localhost:5173
+npm run build    # vérification TypeScript + build de production
 ```
-Le serveur de dev Vite tourne sur `http://localhost:5173` ; configurez un proxy ou pointez directement vers `http://localhost:8000` pour l'API en développement.
+
+## Dimensionnement
+
+Mesuré sur une base PostgreSQL peuplée de **5 000 audits et 25 000 phases** :
+listes, kanban, plan de charge, planning mensuel et tableaux de bord répondent
+**en moins de 250 ms**. Les seuils et recommandations figurent dans
+[docs/dimensionnement.md](docs/dimensionnement.md).
 
 ## Authentification SSO (optionnel)
 
-Le modèle utilisateur prévoit un champ `auth_provider` (`local`/`sso`) et les variables `OIDC_*` dans `.env` pour brancher un fournisseur d'identité d'entreprise (Azure AD, Keycloak, etc.) sans remettre en cause le schéma de données. L'intégration complète du flux OIDC est à finaliser selon le fournisseur choisi.
+Le modèle utilisateur prévoit `auth_provider` (`local`/`sso`) et les variables
+`OIDC_*` pour brancher un fournisseur d'identité d'entreprise (Azure AD,
+Keycloak…) sans remettre en cause le schéma de données. L'intégration complète du
+flux OIDC reste à finaliser selon le fournisseur retenu.
 
 ## Sécurité
 
-- Mots de passe hachés (bcrypt), jetons JWT à durée limitée.
-- Uploads : noms de fichiers assainis, taille maximale contrôlée, stockage isolé par audit.
-- Pensez à changer `SECRET_KEY` et les mots de passe par défaut avant toute mise en production.
+Mots de passe hachés (bcrypt), jetons JWT à durée limitée, contrôle de rôle sur
+chaque point d'entrée, uploads assainis et limités en taille, stockage isolé par
+audit. Avant mise en production, voir la liste de vérification de
+[docs/securite.md](docs/securite.md).

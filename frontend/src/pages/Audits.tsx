@@ -20,10 +20,24 @@ import {
   Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+import { Chip } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
 import { apiClient } from "../api/client";
 import { PriorityChip, StatusChip } from "../components/StatusChips";
 import { useAuth } from "../auth/AuthContext";
-import type { Audit, AuditPriority, AuditStatus, Category, PhaseTemplate, PrestationCompany, Template, User } from "../types";
+import type {
+  Audit,
+  AuditPriority,
+  AuditStatus,
+  Category,
+  CustomField,
+  PhaseTemplate,
+  PrestationCompany,
+  Tag,
+  Template,
+  User,
+} from "../types";
 
 const PRIORITIES: AuditPriority[] = ["basse", "moyenne", "haute", "critique"];
 const STATUSES: AuditStatus[] = ["brouillon", "planifie", "en_cours", "en_attente", "bloque", "termine", "annule"];
@@ -37,12 +51,18 @@ export function Audits() {
   const [companies, setCompanies] = useState<PrestationCompany[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [phaseTemplates, setPhaseTemplates] = useState<PhaseTemplate[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
+  const [search, setSearch] = useState("");
   const [openCreate, setOpenCreate] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
+    reference: "",
     description: "",
     category_id: "",
     priority: "moyenne" as AuditPriority,
@@ -57,6 +77,7 @@ export function Audits() {
     planned_end: "",
     apply_template_id: "",
     apply_phase_template_id: "",
+    tag_ids: [] as string[],
   });
 
   const canManage = user?.role === "admin" || user?.role === "pilote_audit";
@@ -65,6 +86,9 @@ export function Audits() {
     const params: Record<string, string> = {};
     if (statusFilter) params.status = statusFilter;
     if (priorityFilter) params.priority = priorityFilter;
+    if (categoryFilter) params.category_id = categoryFilter;
+    if (tagFilter) params.tag_id = tagFilter;
+    if (search.trim()) params.q = search.trim();
     apiClient.get<Audit[]>("/api/audits", { params }).then((r) => setAudits(r.data));
   };
 
@@ -74,9 +98,13 @@ export function Audits() {
     apiClient.get<PrestationCompany[]>("/api/prestation-companies").then((r) => setCompanies(r.data));
     apiClient.get<Template[]>("/api/templates").then((r) => setTemplates(r.data));
     apiClient.get<PhaseTemplate[]>("/api/phase-templates").then((r) => setPhaseTemplates(r.data));
+    apiClient.get<Tag[]>("/api/tags").then((r) => setTags(r.data));
+    apiClient.get<CustomField[]>("/api/custom-fields").then((r) => setCustomFields(r.data));
   }, []);
 
-  useEffect(loadAudits, [statusFilter, priorityFilter]);
+  useEffect(loadAudits, [statusFilter, priorityFilter, categoryFilter, tagFilter, search]);
+
+  const listedCustomFields = customFields.filter((f) => f.show_in_list);
 
   const categoryName = (id: string | null) => categories.find((c) => c.id === id)?.name ?? "—";
   const userName = (id: string | null) => users.find((u) => u.id === id)?.full_name ?? "—";
@@ -84,6 +112,7 @@ export function Audits() {
   const handleCreate = async () => {
     const payload = {
       ...form,
+      reference: form.reference || null,
       category_id: form.category_id || null,
       pilot_id: form.pilot_id || null,
       service_owner_id: form.service_owner_id || null,
@@ -108,13 +137,32 @@ export function Audits() {
           Audits
         </Typography>
         {canManage && (
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenCreate(true)}>
-            Nouvel audit
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button component={RouterLink} to="/import" startIcon={<UploadFileIcon />}>
+              Import en masse
+            </Button>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenCreate(true)}>
+              Nouvel audit
+            </Button>
+          </Stack>
         )}
       </Stack>
 
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+      <Stack direction="row" spacing={2} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
+        <TextField
+          size="small" label="Rechercher" placeholder="nom, référence…" value={search}
+          onChange={(e) => setSearch(e.target.value)} sx={{ minWidth: 200 }}
+        />
+        <TextField select size="small" label="Catégorie" value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)} sx={{ minWidth: 180 }}>
+          <MenuItem value="">Toutes</MenuItem>
+          {categories.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+        </TextField>
+        <TextField select size="small" label="Étiquette" value={tagFilter}
+          onChange={(e) => setTagFilter(e.target.value)} sx={{ minWidth: 160 }}>
+          <MenuItem value="">Toutes</MenuItem>
+          {tags.map((t) => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
+        </TextField>
         <TextField select size="small" label="Statut" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 180 }}>
           <MenuItem value="">Tous</MenuItem>
           {STATUSES.map((s) => (
@@ -133,25 +181,46 @@ export function Audits() {
         <Table size="small">
           <TableHead>
             <TableRow>
+              <TableCell>Référence</TableCell>
               <TableCell>Nom</TableCell>
               <TableCell>Catégorie</TableCell>
+              <TableCell>Étiquettes</TableCell>
               <TableCell>Priorité</TableCell>
               <TableCell>Statut</TableCell>
               <TableCell>Pilote</TableCell>
-              <TableCell>Période</TableCell>
+              <TableCell>Période prévue</TableCell>
+              <TableCell>Période réelle</TableCell>
+              {listedCustomFields.map((field) => (
+                <TableCell key={field.id}>{field.label}</TableCell>
+              ))}
             </TableRow>
           </TableHead>
           <TableBody>
             {audits.map((audit) => (
               <TableRow key={audit.id} hover sx={{ cursor: "pointer" }} onClick={() => navigate(`/audits/${audit.id}`)}>
+                <TableCell>{audit.reference ?? "—"}</TableCell>
                 <TableCell>{audit.name}</TableCell>
                 <TableCell>{categoryName(audit.category_id)}</TableCell>
+                <TableCell>
+                  <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                    {(audit.tags ?? []).map((tag) => (
+                      <Chip key={tag.id} size="small" label={tag.name} variant="outlined"
+                        sx={{ height: 20, fontSize: 11, borderColor: tag.color ?? undefined }} />
+                    ))}
+                  </Stack>
+                </TableCell>
                 <TableCell><PriorityChip priority={audit.priority} /></TableCell>
                 <TableCell><StatusChip status={audit.status} /></TableCell>
                 <TableCell>{userName(audit.pilot_id)}</TableCell>
                 <TableCell>
                   {audit.planned_start ?? "?"} → {audit.planned_end ?? "?"}
                 </TableCell>
+                <TableCell>
+                  {audit.actual_start ?? "?"} → {audit.actual_end ?? "?"}
+                </TableCell>
+                {listedCustomFields.map((field) => (
+                  <TableCell key={field.id}>{audit.custom_fields?.[field.key] ?? "—"}</TableCell>
+                ))}
               </TableRow>
             ))}
           </TableBody>
@@ -162,10 +231,32 @@ export function Audits() {
         <DialogTitle>Nouvel audit</DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
           <TextField label="Nom" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+          <TextField
+            label="Référence / identifiant TI" value={form.reference}
+            onChange={(e) => setForm({ ...form, reference: e.target.value })}
+            helperText="Facultatif, mais utile pour les imports et le rapprochement des doublons"
+          />
           <TextField label="Description" multiline rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           <TextField select label="Catégorie" value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })}>
             <MenuItem value="">Aucune</MenuItem>
             {categories.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+          </TextField>
+          <TextField
+            select label="Étiquettes" value={form.tag_ids}
+            SelectProps={{
+              multiple: true,
+              renderValue: (selected) => (selected as string[])
+                .map((id) => tags.find((t) => t.id === id)?.name ?? id)
+                .join(", "),
+            }}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                tag_ids: typeof e.target.value === "string" ? e.target.value.split(",") : (e.target.value as string[]),
+              })
+            }
+          >
+            {tags.map((tag) => <MenuItem key={tag.id} value={tag.id}>{tag.name}</MenuItem>)}
           </TextField>
           <TextField select label="Priorité" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as AuditPriority })}>
             {PRIORITIES.map((p) => <MenuItem key={p} value={p}>{p}</MenuItem>)}

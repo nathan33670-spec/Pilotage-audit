@@ -6,3 +6,6 @@ uploads/*
 .DS_Store
 node_modules/
 dist/
+*.tsbuildinfo
+.pytest_cache/
+.venv/

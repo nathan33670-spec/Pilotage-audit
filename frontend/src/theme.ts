@@ -39,6 +39,20 @@ export const STATUS_COLORS: Record<string, string> = {
   annule: "#616161",
 };
 
+// Palette catégorielle des graphiques (ordre fixe, jamais recyclé).
+// Validée pour la vision des couleurs (deutan/protan/tritan) sur fond clair.
+export const SERIES_COLORS = ["#2a78d6", "#eb6834", "#1baf7a"];
+export const SERIES_LABELS = { planned: "Planifié", actual: "Réel", other: "Autre" };
+
+// Encres de texte : les valeurs et libellés ne portent jamais la couleur de série.
+export const CHART_INK = {
+  primary: "#1a1a19",
+  secondary: "#52514e",
+  muted: "#8a8983",
+  grid: "#e3e5e8",
+  surface: "#ffffff",
+};
+
 export const PHASE_STATUS_COLORS: Record<string, string> = {
   planifie: "#90a4ae",
   confirme: "#43a047",
