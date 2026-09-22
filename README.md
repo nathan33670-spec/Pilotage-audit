@@ -97,6 +97,7 @@ La documentation complète est dans **[`docs/`](docs/README.md)** :
 | [exploitation.md](docs/exploitation.md) · [securite.md](docs/securite.md) | Déploiement, sauvegardes, sécurité |
 | [dimensionnement.md](docs/dimensionnement.md) | **Mesures de charge et limites** |
 | [developpement.md](docs/developpement.md) | Environnement local, tests, conventions |
+| [presentation-equipe.pdf](docs/presentation-equipe.pdf) | Plaquette de présentation de l'application (captures commentées) |
 
 L'essentiel est aussi accessible **dans l'application** (menu « Documentation »),
 et la référence interactive de l'API sur `/api/docs`.

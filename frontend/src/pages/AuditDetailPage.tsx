@@ -249,6 +249,16 @@ export function AuditDetailPage() {
                   </Grid>
                   <Grid item xs={6}>
                     <TextField
+                      select fullWidth size="small" label="Responsable de service"
+                      value={audit.service_owner_id ?? ""}
+                      onChange={(e) => patchAudit({ service_owner_id: e.target.value || null })}
+                    >
+                      <MenuItem value="">Aucun</MenuItem>
+                      {users.map((u) => <MenuItem key={u.id} value={u.id}>{u.full_name}</MenuItem>)}
+                    </TextField>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
                       fullWidth size="small" label="Référence / identifiant TI"
                       value={audit.reference ?? ""}
                       onBlur={(e) => patchAudit({ reference: e.target.value || null })}
@@ -349,6 +359,8 @@ export function AuditDetailPage() {
                 </Grid>
               )}
 
+              {!canManage && (
+              <>
               <Divider sx={{ my: 2 }} />
               <Typography variant="body2"><b>Catégorie :</b> {categories.find((c) => c.id === audit.category_id)?.name ?? "—"}</Typography>
               <Typography variant="body2"><b>Responsable de service :</b> {userName(audit.service_owner_id)}</Typography>
@@ -373,6 +385,8 @@ export function AuditDetailPage() {
                       </Typography>
                     ))}
                 </Box>
+              )}
+              </>
               )}
             </CardContent>
           </Card>

@@ -16,6 +16,7 @@ Documentation de l'application de pilotage des audits / tests d'intrusion (TI).
 | [dimensionnement.md](dimensionnement.md) | **Mesures de charge et limites** : volumétrie supportée, seuils d'alerte |
 | [securite.md](securite.md) | Authentification, habilitations, données, points de vigilance |
 | [developpement.md](developpement.md) | Environnement local, tests, conventions, ajout de fonctionnalités |
+| [presentation-equipe.pdf](presentation-equipe.pdf) | **Plaquette de présentation** (17 pages) : captures commentées de l'application, sur jeu de données fictif |
 
 La documentation fonctionnelle essentielle est également disponible **dans
 l'application** (menu « Documentation »), et la référence interactive de l'API
