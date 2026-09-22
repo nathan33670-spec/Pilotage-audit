@@ -95,6 +95,7 @@ La documentation complète est dans **[`docs/`](docs/README.md)** :
 | [statistiques.md](docs/statistiques.md) | Indicateurs et définition des durées |
 | [architecture.md](docs/architecture.md) · [modele-de-donnees.md](docs/modele-de-donnees.md) · [api.md](docs/api.md) | Technique |
 | [exploitation.md](docs/exploitation.md) · [securite.md](docs/securite.md) | Déploiement, sauvegardes, sécurité |
+| [deploiement-synology.md](docs/deploiement-synology.md) | Installation sur NAS Synology (DSM 7) |
 | [dimensionnement.md](docs/dimensionnement.md) | **Mesures de charge et limites** |
 | [developpement.md](docs/developpement.md) | Environnement local, tests, conventions |
 | [presentation-equipe.pdf](docs/presentation-equipe.pdf) | Plaquette de présentation de l'application (captures commentées) |

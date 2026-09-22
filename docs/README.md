@@ -13,6 +13,7 @@ Documentation de l'application de pilotage des audits / tests d'intrusion (TI).
 | [statistiques.md](statistiques.md) | Tableaux de bord, définition des durées réelles, indicateurs |
 | [api.md](api.md) | Référence des points d'entrée HTTP |
 | [exploitation.md](exploitation.md) | Déploiement, configuration, sauvegardes, mise à jour, supervision |
+| [deploiement-synology.md](deploiement-synology.md) | Installation pas à pas sur un NAS Synology (DSM 7) |
 | [dimensionnement.md](dimensionnement.md) | **Mesures de charge et limites** : volumétrie supportée, seuils d'alerte |
 | [securite.md](securite.md) | Authentification, habilitations, données, points de vigilance |
 | [developpement.md](developpement.md) | Environnement local, tests, conventions, ajout de fonctionnalités |

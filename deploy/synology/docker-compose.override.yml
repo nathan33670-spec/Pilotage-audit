@@ -1,0 +1,19 @@
+# Surcouche pour Synology DSM.
+#
+# Place la base de données et les documents dans un dossier partagé du NAS
+# (/volume1/docker/pilotage-audit par défaut) plutôt que dans des volumes Docker
+# internes : le contenu reste visible depuis File Station et peut être sauvegardé
+# par Hyper Backup.
+#
+# Utilisation :
+#   cp deploy/synology/docker-compose.override.yml ./docker-compose.override.yml
+# puis les commandes docker compose habituelles (la surcouche est prise en compte
+# automatiquement).
+services:
+  db:
+    volumes:
+      - ${DATA_DIR:-/volume1/docker/pilotage-audit}/db:/var/lib/postgresql/data
+
+  backend:
+    volumes:
+      - ${DATA_DIR:-/volume1/docker/pilotage-audit}/uploads:/data/uploads

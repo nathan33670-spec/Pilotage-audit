@@ -31,7 +31,7 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@pilotage-audit.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Merci de definir ADMIN_PASSWORD dans le fichier .env}
       UPLOADS_DIR: /data/uploads
-      CORS_ORIGINS: '["http://localhost:8080"]'
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:8080"]}
       OIDC_ENABLED: ${OIDC_ENABLED:-false}
       OIDC_ISSUER: ${OIDC_ISSUER:-}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
@@ -51,7 +51,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "8080:80"
+      - "${HTTP_PORT:-8080}:80"
 
 volumes:
   db_data:
